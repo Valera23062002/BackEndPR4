@@ -2,6 +2,7 @@
 // TODO 1: PREPARING ENVIRONMENT: 1) session 2) functions
 session_start();
 
+$aConfig = require_once 'config.php';
 // TODO 2: ROUTING
 if (!empty($_SESSION['auth'])) {
     header('Location: /admin.php');
@@ -9,34 +10,28 @@ if (!empty($_SESSION['auth'])) {
 }
 
 // TODO 3: CODE by REQUEST METHODS (ACTIONS) GET, POST, etc. (handle data from request): 1) validate 2) working with data source 3) transforming data
-
-// 1. Create empty $infoMessage
 $infoMessage = '';
 
-// 2. handle form data
 if (!empty($_POST['email']) && !empty($_POST['password'])) {
-
-    // 3. Check that user has already existed
-    $sUsers = file_get_contents("users.csv");
-    $aJsonsUsers = explode("\n", $sUsers);
-
     $isAlreadyRegistered = false;
 
-    foreach ($aJsonsUsers as $jsonUser) {
-        $aUser = json_decode($jsonUser, true);
-        if (!$aUser) break;
+    $db = mysqli_connect(
+        $aConfig['host'],
+        $aConfig['user'],
+        $aConfig['pass'],
+        $aConfig['name']
+    );
+    $query = "SELECT * FROM users where email = '{$_POST['email']}' and password = '{$_POST['password']}'" ;
+    $dbResponse = mysqli_query($db, $query);
+    $aUser = mysqli_fetch_assoc($dbResponse);
+    echo($query);
+    mysqli_close($db);
 
-        foreach ($aUser as $email => $password) {
-            if (($email == $_POST['email']) && ($password == $_POST['password'])) {
-                $isAlreadyRegistered = true;
+    if (!empty($aUser)) {
+        $isAlreadyRegistered = true;
+        $_SESSION['auth'] = true;
 
-                $_SESSION['auth'] = true;
-                // $_SESSION['email'] = $_POST['email'];
-
-                header("Location: admin.php");
-                die;
-            }
-        }
+        header('Location: /admin.php');
     }
 
     if (!$isAlreadyRegistered) {
@@ -47,10 +42,7 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
 } elseif (!empty($_POST)) {
     $infoMessage = 'Заполните форму авторизации!';
 }
-
-
 ?>
-
 
 <!DOCTYPE html>
 <html>
